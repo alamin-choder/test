@@ -1,0 +1,216 @@
+{
+  "targets": [
+    
+    {
+  "name": "Chaldal",
+  "type": "POST",
+  "base": "https://chaldal.com/yolk/api-v4/Auth/RequestOtpWithApiKey",
+  "bodyTemplate": {},
+  "queryParamsTemplate": {
+    "apiKey": "0cAFcWeA5eKDNLblw2n5t566B681MPGfks51tUk4ugb5cjPxxzN_JtWmrnJzfi7RMhHRC3enLTmIC8w0KRefOKt66YG6hblAc4-5Ul29QB_x08ofCS3P7XDknO10Za2d1vgMibomp8PrErDGaD33FykqB5Wvg9grY9fIVL051qFjvSV2NcaUqZy3yZ8kFNv-ze5_N65DdSfLEeZCKwO2wDT_-R7UeZMSFCmwToR3XmmFtbrDRIksBiO9ZnRLzA6f2GycHEmyoKKsXLWAh4WsBvY4JMtqSjpdjKWHhqeb55S4_BhjewTe1dhnh326XLfEDVGeD7Z1J5EmoJSqmrKDQiLJoj_fQncr1Kgs_zhrbojKPDcNjS98qafXvA_jEgJJ7FohsXuPLTNyw_8138ZwznqiQCY26vyDD8qRR9t4QnHHMihqIAZzCf8P0S5StN-Y0-e-0w7VsCplhKBuvB5ZFrTvFBWKRJmQ2dgp6uNtDsxw94xNFzISrpauUja3nxhGa0IKaNxnnMv_YhcJTLd-0zK7iS4kYuoDqnfecbL7_xcaSxntPDvGOWebpizqXfhRSIGOh0sObpxX-X73FYcYnLRNxFiYBvt_RERzWgDdtIiX9Q3Y1y3qTbrEqvpa-KHmPUZ4QNuPn40Q_B5avc1D6LYK4G8SQA4XvIWdect42QswHm63Hb1qQggT28TkiLropZME0Gxkby4_Ux9VLZC9ADDuoqz4lSECYub7Fw_9trUVE0rDcChgNXHKHnigPtz018Yy9z8YfnRvA",
+    "phoneNumber": "__NUMBER__",
+    "retryAttempt": "0"
+  },
+  "headers": {
+    "Content-Type": "application/json",
+    "accept": "application/json",
+    "origin": "https://chaldal.com",
+    "referer": "https://chaldal.com/",
+    "x-egg-clientapp": "Omelette",
+    "x-egg-platform": "Browser",
+    "x-egg-storeid": "1"
+  }
+}
+,
+
+    {
+  "name": "Apex4U",
+  "type": "POST",
+  "base": "https://api.apex4u.com/api/auth/login",
+  "bodyTemplate": {
+    "phoneNumber": "__NUMBER__"
+  },
+  "headers": {
+    "Content-Type": "application/json",
+    "accept": "application/json, text/plain, */*",
+    "origin": "https://apex4u.com",
+    "referer": "https://apex4u.com/"
+  }
+},
+    {
+  "name": "Medeasy",
+      "type": "GET",
+      "base": "https://api.medeasy.health/api/send-otp/",
+      "queryParam": null,
+      "headers": {
+        "accept": "application/json",
+        "origin": "https://medeasy.health",
+        "referer": "https://medeasy.health/"
+      }
+    },
+
+    {
+      "name": "Bikroy",
+      "type": "GET",
+      "base": "https://bikroy.com",
+      "route": "/data/phone_number_login/verifications/phone_login",
+      "queryParam": "phone"
+    },
+    {
+      "name": "Quizgiri",
+      "type": "POST",
+      "base": "https://developer.quizgiri.xyz/api/v2.0/send-otp",
+      "headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "x-requested-with": "XMLHttpRequest",
+        "Origin": "https://app.quizgiri.com.bd",
+        "Referer": "https://app.quizgiri.com.bd/"
+      },
+      "bodyTemplate": {
+        "phone": "__NUMBER__",
+        "country_code": "+88"
+      }
+    },
+    {
+      "name": "Arogga",
+      "type": "POST",
+      "base": "https://api.arogga.com",
+      "route": "/auth/v1/sms/send/",
+      "headers": {
+        "Content-Type": "multipart/form-data",
+        "Origin": "https://www.arogga.com",
+        "Referer": "https://www.arogga.com/"
+      },
+      "bodyTemplate": {
+        "f": "web",
+        "b": "Edge",
+        "v": "139.0.0.0",
+        "os": "Windows",
+        "osv": "10",
+        "mobile": "__NUMBER__",
+        "fcmToken": "referral"
+      }
+    },
+    {
+      "name": "Shwapno",
+      "type": "POST",
+      "base": "https://www.shwapno.com",
+      "route": "/api/auth",
+      "headers": {
+        "Content-Type": "application/json",
+        "Origin": "https://www.shwapno.com",
+        "Referer": "https://www.shwapno.com/"
+      },
+      "bodyTemplate": {
+        "phoneNumber": "__NUMBER__"
+      }
+    },
+    {
+      "name": "GogoBangla",
+      "type": "POST",
+      "base": "https://api.gogobangla.com",
+      "route": "/api/v1/subject/Session/actMaybeConstructAndWait/E1G414Lkb0u7iETNMc7MbA",
+      "headers": {
+        "Content-Type": "application/json",
+        "Origin": "https://gogobangla.com",
+        "Referer": "https://gogobangla.com/"
+      },
+      "query": {
+        "waitForMs": "20000",
+        "projection": "PublicSession"
+      },
+      "bodyTemplate": {
+        "Action": ["RequestOtp", {"Value_": ["BdMobileNumber", "+88__NUMBER__"]}],
+        "Constructor": ["NewFromId", ["SessionId", "d7b85113-e482-4b6f-bb88-44cd31cecc6c"]],
+        "LifeEvent": ["RequestOtpComplete", false]
+      }
+    },
+    {
+      "name": "Cookups",
+      "type": "POST",
+      "base": "https://api.cookups.app",
+      "route": "/api/v1/subject/Session/actMaybeConstruct/mOuT_P-rnEaJ3uwtRT-Xnw",
+      "headers": {
+        "Content-Type": "application/json",
+        "Origin": "https://cookups.app",
+        "Referer": "https://cookups.app/"
+      },
+      "bodyTemplate": {
+        "Action": ["GenerateOtp", {"Value_": ["BdMobileNumber", "+88__NUMBER__"]}],
+        "Constructor": ["NewFromId", ["SessionId", "fc93eb98-abff-469c-89de-ec2d453f979f"]]
+      }
+    },
+    {
+  "name": "TruckLagbe",
+  "type": "POST",
+  "base": "https://tethys.trucklagbe.com/tl_gateway/tl_login/124/loginWithPhoneNo",
+  "headers": {
+    "Content-Type": "application/json",
+    "Origin": "https://trucklagbe.com",
+    "Referer": "https://trucklagbe.com/",
+    "source": "website",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+  },
+  "bodyTemplate": {
+    "userType": "shipper",
+    "phoneNo": "__NUMBER__"
+  }
+},
+{
+  "name": "Rokomari",
+  "type": "POST",
+  "base": "https://www.rokomari.com",
+  "route": "/otp/send",
+  "headers": {
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "Origin": "https://www.rokomari.com",
+    "Referer": "https://www.rokomari.com/login",
+    "X-Requested-With": "XMLHttpRequest",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/139.0.0.0 Safari/537.36"
+  },
+  "bodyTemplate": {
+    "emailOrPhone": "88__NUMBER__",
+    "countryCode": "BD"
+  }
+},
+{
+  "name": "KhaasFood",
+  "type": "POST",
+  "base": "https://www.khaasfood.com",
+  "route": "/wp-admin/admin-ajax.php",
+  "headers": {
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "Origin": "https://www.khaasfood.com",
+    "Referer": "https://www.khaasfood.com/",
+    "X-Requested-With": "XMLHttpRequest",
+    "User-Agent": "dynamic"  
+  },
+  "bodyTemplate": {
+    "mobileNo": "__NUMBER__",
+    "countrycode": "+880",
+    "csrf": "__CSRF__", 
+    "login": "1",
+    "json": "1",
+    "action": "digits_check_mob"
+  },
+  "dynamicToken": "csrf"  
+},
+{
+  "name": "Swap",
+  "type": "POST",
+  "base": "https://api.swap.com.bd",
+  "route": "/api/v1/send-otp/v2",
+  "headers": {
+    "Content-Type": "application/json",
+    "Origin": "https://swap.com.bd",
+    "Referer": "https://swap.com.bd/",
+    "signature": "__SIGNATURE__",  
+    "User-Agent": "dynamic"
+  },
+  "bodyTemplate": {
+    "phone": "__NUMBER__"
+  },
+  "dynamicToken": "signature"  
+}
+  ]
+}
