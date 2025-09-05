@@ -1,5 +1,74 @@
 {
   "targets": [
+
+
+      {
+  "name": "Shajgoj",
+  "type": "POST",
+  "base": "https://bk.shajgoj.com",
+  "route": "/api/customers/send-otp",
+  "headers": {
+    "Content-Type": "application/json"
+  }
+}
+,
+    
+   
+    {
+  "name": "MeenaBazar",
+  "type": "POST",
+  "base": "https://mbonlineapi.com",
+  "route": "/api/front/send/otp",
+  "headers": {
+    "Content-Type": "application/json",
+    "Accept": "application/json, text/plain, */*",
+    "Origin": "https://meenabazaronline.com",
+    "Referer": "https://meenabazaronline.com/",
+    "Authorization": "Bearer KpWhYr3o3rJwZhsXGUwx1SI56b1BWoth8Na9cbMdobi23Wv3J4QxvqfYPkrz",
+    "token": "Bearer KpWhYr3o3rJwZhsXGUwx1SI56b1BWoth8Na9cbMdobi23Wv3J4QxvqfYPkrz"
+  },
+  "bodyTemplate": {
+    "CellPhone": "__NUMBER__",
+    "type": "login"
+  }
+}
+,
+    {
+  "name": "Laobaan",
+  "type": "POST",
+  "base": "https://api.laobaan.com",
+  "route": "/api/frontend/user-dashboard/access/get-otp",
+  "headers": {
+    "Content-Type": "application/json",
+    "Accept": "application/json, text/plain, */*",
+    "Origin": "https://laobaan.com",
+    "Referer": "https://laobaan.com/",
+    "appname": "laobaan",
+    "key": "user.get_otp49f46a5cc211a231ac43eb4fc3ba4fab",
+    "token": "e5282d35bacf3c9aa21e5ad897a73f1f"
+  },
+  "bodyTemplate": {
+    "phone": "__NUMBER__"
+  }
+}
+,
+
+    {
+  "name": "TanhasCollection",
+  "type": "POST",
+  "base": "https://app.tanhascollection.com",
+  "route": "/api/get_otp",
+  "headers": {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "Origin": "https://tanhascollection.com",
+    "Referer": "https://tanhascollection.com/"
+  },
+  "bodyTemplate": {
+    "phone": "__NUMBER__"
+  }
+}
+,
     
     {
   "name": "Chaldal",
