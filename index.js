@@ -18,7 +18,7 @@ app.get('/start', bomber.onStart);
 app.get('/status', bomber.onStatus);
 app.get('/stop', bomber.onStop);
 app.get('/history', bomber.onHistory);
-app.get('/boom', bomber.onDashboard);
+app.get('/boomber', bomber.onDashboard);
 
 
 
