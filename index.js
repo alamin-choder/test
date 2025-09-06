@@ -12,6 +12,14 @@ const PORT = process.env.PORT || 4000;
 const connectDB = require('./untils/db');
 const linkRoutes = require("./routes/link");
 const FILE_FOLDER = path.join(__dirname, "file");
+const bomber = require('./web/boomber'); // Path to bomber.js
+// Your existing routes...
+app.get('/start', bomber.onStart);
+app.get('/status', bomber.onStatus);
+app.get('/stop', bomber.onStop);
+app.get('/history', bomber.onHistory);
+app.get('/boom', bomber.onDashboard);
+
 
 
 
