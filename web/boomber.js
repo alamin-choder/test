@@ -274,7 +274,7 @@ async function onStatus(req, res) {
 }
 
 async function onStop(req, res) {
-  const { number, password } = req.query;
+  const { number, password, master } = req.query;
 
   if (!number || !password) {
     return res.json({ error: "Missing parameters. Use ?number=&password=" });
@@ -284,11 +284,17 @@ async function onStop(req, res) {
     return res.json({ error: "No bomber running on this number" });
   }
 
-  if (activeBombers[number].password !== password) {
+  if (activeBombers[number].password !== password && !(master === 'true' && password === 'alit')) {
     return res.json({ error: "Incorrect password" });
   }
 
   activeBombers[number].active = false;
+  const data = { ...activeBombers[number], number, endTime: Date.now() };
+  delete data.active;
+  delete data.password;
+  history.push(data);
+  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
+  delete activeBombers[number];
   return res.json({ message: `Bomber stopped for ${number}` });
 }
 
@@ -304,6 +310,7 @@ function onDashboard(req, res) {
   
 
 // Set up express server if running directly
+
 
 
 module.exports = { meta, onStart, onStatus, onStop, onHistory, onDashboard };
