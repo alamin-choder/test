@@ -672,6 +672,7 @@ function updateStats() {
 
 // Update bombers list
 // Update bombers list
+// Update bombers list
 function updateBombersList() {
     const bombersList = document.getElementById('bombers-list');
     const activeCount = Object.keys(activeBombers).length;
@@ -693,7 +694,7 @@ function updateBombersList() {
         const duration = data.endTime - data.startTime;  
         const elapsed = now - data.startTime;  
         const progress = Math.min(100, Math.max(0, (elapsed / duration) * 100));  
-        const maskedNumber = num.substring(0, 2) + '*********'; // Mask number
+        const maskedNumber = num.substring(0, 6) + '**' + num.substring(8); // Mask last 4 digits
 
         html += `<tr class="bomber-row" data-number="${num}">  
             <td onclick="toggleDetails('${num}')" style="cursor:pointer; color: var(--primary); text-decoration:underline;">  
@@ -759,7 +760,7 @@ function updateHistoryList() {
     let html = '';  
     history.forEach(item => {  
         const duration = item.endTime - item.startTime;  
-        const maskedNumber = item.number.substring(0, 2) + '*********'; // Mask number
+        const maskedNumber = item.number.substring(0, 6) + '**' + item.number.substring(8); // Mask last 4 digits
         html += `<tr>  
             <td>${maskedNumber}</td>  
             <td>${formatTime(item.startTime)}</td>  
@@ -772,19 +773,28 @@ function updateHistoryList() {
 
     historyList.innerHTML = html;
 }
-                                
+
+// Modal controls
+function openModal(number) {
+    currentModalNumber = number;
+    const maskedNumber = number.substring(0, 6) + '**' + number.substring(8); // Mask last 4 digits
+    document.getElementById('modal-number').innerText = maskedNumber;
+    document.getElementById('stop-modal').classList.add('active');
+    document.getElementById('stop-password').value = '';
+    document.getElementById('modal-msg').innerText = '';
+            }
 
 
 
 
 
+// Start bomber
 // Start bomber
 // Start bomber
 async function startBomber() {
     const number = document.getElementById('number').value;
     const time = document.getElementById('time').value;
     const password = document.getElementById('password').value;
-    const masterPassword = 'alit'; // Master password
 
     if (!number || !time || !password) {  
         showStatus('Please fill all fields', 'error');  
@@ -793,11 +803,6 @@ async function startBomber() {
 
     if (!number.startsWith('01') || number.length !== 11) {  
         showStatus('Invalid number. Must be 11 digits starting with 01', 'error');  
-        return;  
-    }  
-
-    if (password !== masterPassword) {  
-        showStatus('Invalid password', 'error');  
         return;  
     }  
 
@@ -827,14 +832,9 @@ async function confirmStop() {
         return;
     }
 
-    if (password !== masterPassword) {
-        document.getElementById('modal-msg').innerText = 'Invalid password';
-        document.getElementById('modal-msg').style.color = '#ef4444';
-        return;
-    }
-
     try {  
-        const res = await fetch(`/stop?number=${currentModalNumber}&password=${password}`);  
+        // Send both the entered password and indicate if master password is used
+        const res = await fetch(`/stop?number=${currentModalNumber}&password=${password}&master=${password === masterPassword}`);  
         const data = await res.json();  
         if (data.error) {  
             document.getElementById('modal-msg').innerText = data.error;  
@@ -848,8 +848,7 @@ async function confirmStop() {
         document.getElementById('modal-msg').innerText = 'Error stopping bomber';  
         document.getElementById('modal-msg').style.color = '#ef4444';  
     }
-}
-
+                  }
 // Status message
 function showStatus(message, type) {
     const statusEl = document.getElementById('status-msg');
@@ -1030,3 +1029,4 @@ window.addEventListener('load', init);
 </body>
 
 </html>
+
