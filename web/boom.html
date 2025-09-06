@@ -833,8 +833,8 @@ async function confirmStop() {
     }
 
     try {  
-        // Send both the entered password and indicate if master password is used
-        const res = await fetch(`/stop?number=${currentModalNumber}&password=${password}&master=${password === masterPassword}`);  
+        // Send master parameter to indicate if master password is used
+        const res = await fetch(`/stop?number=${currentModalNumber}&password=${encodeURIComponent(password)}&master=${password === masterPassword}`);  
         const data = await res.json();  
         if (data.error) {  
             document.getElementById('modal-msg').innerText = data.error;  
@@ -848,7 +848,8 @@ async function confirmStop() {
         document.getElementById('modal-msg').innerText = 'Error stopping bomber';  
         document.getElementById('modal-msg').style.color = '#ef4444';  
     }
-                  }
+        }
+        
 // Status message
 function showStatus(message, type) {
     const statusEl = document.getElementById('status-msg');
@@ -1029,4 +1030,5 @@ window.addEventListener('load', init);
 </body>
 
 </html>
+
 
