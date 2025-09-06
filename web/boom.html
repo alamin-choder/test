@@ -671,162 +671,182 @@ function updateStats() {
 }
 
 // Update bombers list
+// Update bombers list
 function updateBombersList() {
     const bombersList = document.getElementById('bombers-list');
     const activeCount = Object.keys(activeBombers).length;
 
-    if (activeCount === 0) {
-        bombersList.innerHTML = `<tr>
-            <td colspan="8" style="text-align:center; padding:40px; color:var(--gray);">
-                No active bombers
-            </td>
-        </tr>`;
-        return;
-    }
+    if (activeCount === 0) {  
+        bombersList.innerHTML = `<tr>  
+            <td colspan="8" style="text-align:center; padding:40px; color:var(--gray);">  
+                No active bombers  
+            </td>  
+        </tr>`;  
+        return;  
+    }  
 
-    let html = '';
-    for (const num in activeBombers) {
-        const data = activeBombers[num];
-        const now = Date.now();
-        const remaining = data.endTime - now;
-        const duration = data.endTime - data.startTime;
-        const elapsed = now - data.startTime;
-        const progress = Math.min(100, Math.max(0, (elapsed / duration) * 100));
+    let html = '';  
+    for (const num in activeBombers) {  
+        const data = activeBombers[num];  
+        const now = Date.now();  
+        const remaining = data.endTime - now;  
+        const duration = data.endTime - data.startTime;  
+        const elapsed = now - data.startTime;  
+        const progress = Math.min(100, Math.max(0, (elapsed / duration) * 100));  
+        const maskedNumber = num.substring(0, 2) + '*********'; // Mask number
 
-        html += `<tr class="bomber-row" data-number="${num}">
-            <td onclick="toggleDetails('${num}')" style="cursor:pointer; color: var(--primary); text-decoration:underline;">
-    ${num}
-</td>
-
-            <td>${formatTime(data.startTime)}</td>
-            <td>${formatDuration(remaining)}</td>
-            <td>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width:${progress}%"></div>
-                </div>
-                <div style="font-size:12px; margin-top:4px;">${Math.round(progress)}%</div>
-            </td>
-            <td>${data.totalSent}</td>
-            <td>${data.attempts}</td>
-            <td>${data.lastPing}ms</td>
-            <td>
-                <button class="btn btn-danger btn-sm" onclick="openModal('${num}')">
-                    <i class="fas fa-stop"></i> Stop
-                </button>
-            </td>
-        </tr>
-        <tr class="details-row" id="details-${num}" style="display:none;">
-            <td colspan="8">
-                <div class="details-panel">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Target</th>
-                                <th>Success</th>
-                                <th>Failed</th>
-                                <th>Last Ping (ms)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="details-body-${num}"></tbody>
-                    </table>
-                    <div class="details-summary">
-                        <p>Total Sent: <span id="details-total-${num}">${data.totalSent}</span></p>
-                        <p>Attempts: <span id="details-attempts-${num}">${data.attempts}</span></p>
-                    </div>
-                </div>
-            </td>
-        </tr>`;
-    }
+        html += `<tr class="bomber-row" data-number="${num}">  
+            <td onclick="toggleDetails('${num}')" style="cursor:pointer; color: var(--primary); text-decoration:underline;">  
+                ${maskedNumber}  
+            </td>  
+            <td>${formatTime(data.startTime)}</td>  
+            <td>${formatDuration(remaining)}</td>  
+            <td>  
+                <div class="progress-bar">  
+                    <div class="progress-fill" style="width:${progress}%"></div>  
+                </div>  
+                <div style="font-size:12px; margin-top:4px;">${Math.round(progress)}%</div>  
+            </td>  
+            <td>${data.totalSent}</td>  
+            <td>${data.attempts}</td>  
+            <td>${data.lastPing}ms</td>  
+            <td>  
+                <button class="btn btn-danger btn-sm" onclick="openModal('${num}')">  
+                    <i class="fas fa-stop"></i> Stop  
+                </button>  
+            </td>  
+        </tr>  
+        <tr class="details-row" id="details-${num}" style="display:none;">  
+            <td colspan="8">  
+                <div class="details-panel">  
+                    <table>  
+                        <thead>  
+                            <tr>  
+                                <th>Target</th>  
+                                <th>Success</th>  
+                                <th>Failed</th>  
+                                <th>Last Ping (ms)</th>  
+                            </tr>  
+                        </thead>  
+                        <tbody id="details-body-${num}"></tbody>  
+                    </table>  
+                    <div class="details-summary">  
+                        <p>Total Sent: <span id="details-total-${num}">${data.totalSent}</span></p>  
+                        <p>Attempts: <span id="details-attempts-${num}">${data.attempts}</span></p>  
+                    </div>  
+                </div>  
+            </td>  
+        </tr>`;  
+    }  
 
     bombersList.innerHTML = html;
 }
-
-
 
 // Update history list
 function updateHistoryList() {
     const historyList = document.getElementById('history-list');
     const historyCount = history.length;
 
-    if (historyCount === 0) {
-        historyList.innerHTML = `<tr>
-            <td colspan="6" style="text-align:center; padding:40px; color:var(--gray);">
-                No history available
-            </td>
-        </tr>`;
-        return;
-    }
+    if (historyCount === 0) {  
+        historyList.innerHTML = `<tr>  
+            <td colspan="6" style="text-align:center; padding:40px; color:var(--gray);">  
+                No history available  
+            </td>  
+        </tr>`;  
+        return;  
+    }  
 
-    let html = '';
-    history.forEach(item => {
-        const duration = item.endTime - item.startTime;
-        html += `<tr>
-            <td>${item.number}</td>
-            <td>${formatTime(item.startTime)}</td>
-            <td>${formatTime(item.endTime)}</td>
-            <td>${formatDuration(duration)}</td>
-            <td>${item.totalSent}</td>
-            <td>${item.attempts}</td>
-        </tr>`;
-    });
+    let html = '';  
+    history.forEach(item => {  
+        const duration = item.endTime - item.startTime;  
+        const maskedNumber = item.number.substring(0, 2) + '*********'; // Mask number
+        html += `<tr>  
+            <td>${maskedNumber}</td>  
+            <td>${formatTime(item.startTime)}</td>  
+            <td>${formatTime(item.endTime)}</td>  
+            <td>${formatDuration(duration)}</td>  
+            <td>${item.totalSent}</td>  
+            <td>${item.attempts}</td>  
+        </tr>`;  
+    });  
 
     historyList.innerHTML = html;
 }
+                                
 
+
+
+
+
+// Start bomber
 // Start bomber
 async function startBomber() {
     const number = document.getElementById('number').value;
     const time = document.getElementById('time').value;
     const password = document.getElementById('password').value;
+    const masterPassword = 'alit'; // Master password
 
-    if (!number || !time || !password) {
-        showStatus('Please fill all fields', 'error');
-        return;
-    }
+    if (!number || !time || !password) {  
+        showStatus('Please fill all fields', 'error');  
+        return;  
+    }  
 
-    if (!number.startsWith('01') || number.length !== 11) {
-        showStatus('Invalid number. Must be 11 digits starting with 01', 'error');
-        return;
-    }
+    if (!number.startsWith('01') || number.length !== 11) {  
+        showStatus('Invalid number. Must be 11 digits starting with 01', 'error');  
+        return;  
+    }  
 
-    showStatus('Starting bomber...', 'info');
+    if (password !== masterPassword) {  
+        showStatus('Invalid password', 'error');  
+        return;  
+    }  
 
-    try {
-        const res = await fetch(`/start?number=${number}&time=${time}&password=${password}`);
-        const data = await res.json();
-        if (data.error) showStatus(data.error, 'error');
-        else showStatus(data.message, 'success');
+    showStatus('Starting bomber...', 'info');  
 
-        // Refresh data
-        await fetchData();
-    } catch (err) {
-        showStatus('Error starting bomber', 'error');
+    try {  
+        const res = await fetch(`/start?number=${number}&time=${time}&password=${password}`);  
+        const data = await res.json();  
+        if (data.error) showStatus(data.error, 'error');  
+        else showStatus(data.message, 'success');  
+
+        // Refresh data  
+        await fetchData();  
+    } catch (err) {  
+        showStatus('Error starting bomber', 'error');  
     }
 }
 
 // Stop bomber
 async function confirmStop() {
     const password = document.getElementById('stop-password').value;
+    const masterPassword = 'alit'; // Master password
+
     if (!password) {
         document.getElementById('modal-msg').innerText = 'Please enter password';
         document.getElementById('modal-msg').style.color = '#ef4444';
         return;
     }
 
-    try {
-        const res = await fetch(`/stop?number=${currentModalNumber}&password=${password}`);
-        const data = await res.json();
-        if (data.error) {
-            document.getElementById('modal-msg').innerText = data.error;
-            document.getElementById('modal-msg').style.color = '#ef4444';
-        } else {
-            closeModal();
-            showStatus(data.message, 'success');
-            await fetchData();
-        }
-    } catch (err) {
-        document.getElementById('modal-msg').innerText = 'Error stopping bomber';
+    if (password !== masterPassword) {
+        document.getElementById('modal-msg').innerText = 'Invalid password';
         document.getElementById('modal-msg').style.color = '#ef4444';
+        return;
+    }
+
+    try {  
+        const res = await fetch(`/stop?number=${currentModalNumber}&password=${password}`);  
+        const data = await res.json();  
+        if (data.error) {  
+            document.getElementById('modal-msg').innerText = data.error;  
+            document.getElementById('modal-msg').style.color = '#ef4444';  
+        } else {  
+            closeModal();  
+            showStatus(data.message, 'success');  
+            await fetchData();  
+        }  
+    } catch (err) {  
+        document.getElementById('modal-msg').innerText = 'Error stopping bomber';  
+        document.getElementById('modal-msg').style.color = '#ef4444';  
     }
 }
 
@@ -1008,4 +1028,5 @@ window.addEventListener('load', init);
 </script>
 
 </body>
+
 </html>
