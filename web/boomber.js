@@ -7,7 +7,7 @@ const express = require("express"); // Added express for better routing
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const admin = ["01882030871", "01518931383"];
+const admin = ["01882030873", "01518931383"];
 
 // Random User-Agent generator
 function randomUserAgent() {
@@ -356,4 +356,5 @@ function onDashboard(req, res) {
 
 
 module.exports = { meta, onStart, onStatus, onStop, onHistory, onDashboard };
+
 
