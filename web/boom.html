@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Bomber Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+
+        .details-panel {
+    background: rgba(30, 41, 59, 0.95);
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.details-panel table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+}
+
+.details-panel th, .details-panel td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 14px;
+}
+
+.details-panel th {
+    color: var(--gray);
+    text-align: left;
+}
+
+.details-summary p {
+    margin: 4px 0;
+    font-size: 14px;
+}
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #9ca3af;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: var(--light);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            animation: slideDown 0.5s ease-out;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo i {
+            color: var(--primary);
+            font-size: 32px;
+        }
+        
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(to right, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.5s ease-out;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card i {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+        
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+        
+        .stat-card .label {
+            color: var(--gray);
+            font-size: 14px;
+        }
+        
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card-header i {
+            margin-right: 12px;
+            font-size: 20px;
+            color: var(--primary);
+        }
+        
+        .card-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .badge {
+            background: var(--primary);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--gray);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        th {
+            color: var(--gray);
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        tbody tr {
+            transition: background 0.3s ease;
+        }
+        
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .status {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        
+        .status-inactive {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: #1e293b;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header i {
+            margin-right: 12px;
+            font-size: 24px;
+            color: var(--danger);
+        }
+        
+        .modal-body {
+            margin-bottom: 24px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        .flashing {
+            animation: flash 1s infinite;
+        }
+        
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .target-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-success { background: var(--secondary); }
+        .status-failure { background: var(--danger); }
+        .status-pending { background: var(--warning); }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                text-align: center;
+                gap: 16px;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-bomb"></i>
+                <h1>SMS Bomber Dashboard</h1>
+            </div>
+            <div class="header-info">
+                <span id="current-time"></span>
+                <span class="badge" id="active-count">0 Active</span>
+            </div>
+        </header>
+        
+        <div class="stats-container">
+            <div class="stat-card">
+                <i class="fas fa-paper-plane text-blue-500"></i>
+                <div class="value" id="total-sent">0</div>
+                <div class="label">Total SMS Sent</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-chart-line text-green-500"></i>
+                <div class="value" id="success-rate">0%</div>
+                <div class="label">Success Rate</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-play-circle text-red-500"></i>
+                <div class="value" id="active-bombers">0</div>
+                <div class="label">Active Bombers</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-history text-purple-500"></i>
+                <div class="value" id="total-history">0</div>
+                <div class="label">Total History</div>
+            </div>
+        </div>
+        <div class="modal" id="details-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <i class="fas fa-info-circle"></i>
+            <h2>Bomber Details</h2>
+        </div>
+        <div class="modal-body">
+            <p>Number: <span id="details-number"></span></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Target</th>
+                        <th>Requests Sent</th>
+                        <th>Failures</th>
+                        <th>Last Ping (ms)</th>
+                    </tr>
+                </thead>
+                <tbody id="details-body">
+                    <!-- Filled dynamically -->
+                </tbody>
+            </table>
+            <p>Total Sent: <span id="details-total"></span></p>
+            <p>Attempts: <span id="details-attempts"></span></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" style="background: var(--gray);" onclick="closeDetails()">Close</button>
+        </div>
+    </div>
+</div>
+
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-play-circle"></i>
+                <h2>Start Bombing</h2>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="number">Phone Number</label>
+                    <input type="text" id="number" class="form-control" placeholder="01XXXXXXXXX" maxlength="11">
+                </div>
+                <div class="form-group">
+                    <label for="time">Duration (hours)</label>
+                    <input type="number" id="time" class="form-control" placeholder="Hours" min="1" max="24" value="1">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Password">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button id="start-btn" class="btn">
+                        <i class="fas fa-play"></i> Start Bombing
+                    </button>
+                </div>
+            </div>
+            <div id="status-msg" class="status-msg"></div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-running"></i>
+                <h2>Active Bombers</h2>
+                <span class="badge" id="active-count-badge">0</span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Number</th>
+                            <th>Start Time</th>
+                            <th>Remaining</th>
+                            <th>Progress</th>
+                            <th>Total Sent</th>
+                            <th>Attempts</th>
+                            <th>Last Ping</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bombers-list">
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 40px; color: var(--gray);">
+                                No active bombers
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-history"></i>
+                <h2>Bombing History</h2>
+                <span class="badge" id="history-count">0</span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Number</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Total Sent</th>
+                            <th>Attempts</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-list">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px; color: var(--gray);">
+                                No history available
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="stop-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fas fa-stop-circle"></i>
+                <h2>Stop Bomber</h2>
+            </div>
+            <div class="modal-body">
+                <p>Stop bomber for <span id="modal-number" class="font-semibold"></span>?</p>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label for="stop-password">Password</label>
+                    <input type="password" id="stop-password" class="form-control" placeholder="Password">
+                </div>
+                <div id="modal-msg" class="status-msg" style="margin-top: 12px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" style="background: var(--gray);" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmStop()">
+                    <i class="fas fa-stop"></i> Stop
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+let activeBombers = {};
+let history = [];
+let currentModalNumber = '';
+
+// Fetch data from API
+async function fetchData() {
+    try {
+        const statusRes = await fetch('/status');
+        activeBombers = await statusRes.json();
+
+        const historyRes = await fetch('/history');
+        history = await historyRes.json();
+
+        updateUI();
+    } catch (err) {
+        console.error('Error fetching data:', err);
+    }
+}
+
+// Format time function
+function formatTime(ms) {
+    return new Date(ms).toLocaleString();
+}
+
+// Format duration function
+function formatDuration(ms) {
+    if (ms < 0) return "Expired";
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+    return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+// Update UI
+function updateUI() {
+    updateStats();
+    updateBombersList();
+    updateHistoryList();
+}
+
+// Update statistics
+function updateStats() {
+    const now = new Date();
+    document.getElementById('current-time').innerText = now.toLocaleTimeString();
+
+    const activeCount = Object.keys(activeBombers).length;
+    const historyCount = history.length;
+
+    let totalSent = 0;
+    let totalAttempts = 0;
+
+    for (const num in activeBombers) {
+        totalSent += activeBombers[num].totalSent || 0;
+        totalAttempts += activeBombers[num].attempts || 0;
+    }
+
+    history.forEach(item => {
+        totalSent += item.totalSent || 0;
+        totalAttempts += item.attempts || 0;
+    });
+
+    const successRate = totalAttempts > 0 ? Math.round((totalSent / (totalAttempts * 4)) * 100) : 0;
+
+    document.getElementById('total-sent').innerText = totalSent;
+    document.getElementById('success-rate').innerText = `${successRate}%`;
+    document.getElementById('active-bombers').innerText = activeCount;
+    document.getElementById('total-history').innerText = historyCount;
+    document.getElementById('active-count').innerText = `${activeCount} Active`;
+    document.getElementById('active-count-badge').innerText = activeCount;
+    document.getElementById('history-count').innerText = historyCount;
+}
+
+// Update bombers list
+function updateBombersList() {
+    const bombersList = document.getElementById('bombers-list');
+    const activeCount = Object.keys(activeBombers).length;
+
+    if (activeCount === 0) {
+        bombersList.innerHTML = `<tr>
+            <td colspan="8" style="text-align:center; padding:40px; color:var(--gray);">
+                No active bombers
+            </td>
+        </tr>`;
+        return;
+    }
+
+    let html = '';
+    for (const num in activeBombers) {
+        const data = activeBombers[num];
+        const now = Date.now();
+        const remaining = data.endTime - now;
+        const duration = data.endTime - data.startTime;
+        const elapsed = now - data.startTime;
+        const progress = Math.min(100, Math.max(0, (elapsed / duration) * 100));
+
+        html += `<tr class="bomber-row" data-number="${num}">
+            <td onclick="toggleDetails('${num}')" style="cursor:pointer; color: var(--primary); text-decoration:underline;">
+    ${num}
+</td>
+
+            <td>${formatTime(data.startTime)}</td>
+            <td>${formatDuration(remaining)}</td>
+            <td>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width:${progress}%"></div>
+                </div>
+                <div style="font-size:12px; margin-top:4px;">${Math.round(progress)}%</div>
+            </td>
+            <td>${data.totalSent}</td>
+            <td>${data.attempts}</td>
+            <td>${data.lastPing}ms</td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="openModal('${num}')">
+                    <i class="fas fa-stop"></i> Stop
+                </button>
+            </td>
+        </tr>
+        <tr class="details-row" id="details-${num}" style="display:none;">
+            <td colspan="8">
+                <div class="details-panel">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Target</th>
+                                <th>Success</th>
+                                <th>Failed</th>
+                                <th>Last Ping (ms)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="details-body-${num}"></tbody>
+                    </table>
+                    <div class="details-summary">
+                        <p>Total Sent: <span id="details-total-${num}">${data.totalSent}</span></p>
+                        <p>Attempts: <span id="details-attempts-${num}">${data.attempts}</span></p>
+                    </div>
+                </div>
+            </td>
+        </tr>`;
+    }
+
+    bombersList.innerHTML = html;
+}
+
+
+
+// Update history list
+function updateHistoryList() {
+    const historyList = document.getElementById('history-list');
+    const historyCount = history.length;
+
+    if (historyCount === 0) {
+        historyList.innerHTML = `<tr>
+            <td colspan="6" style="text-align:center; padding:40px; color:var(--gray);">
+                No history available
+            </td>
+        </tr>`;
+        return;
+    }
+
+    let html = '';
+    history.forEach(item => {
+        const duration = item.endTime - item.startTime;
+        html += `<tr>
+            <td>${item.number}</td>
+            <td>${formatTime(item.startTime)}</td>
+            <td>${formatTime(item.endTime)}</td>
+            <td>${formatDuration(duration)}</td>
+            <td>${item.totalSent}</td>
+            <td>${item.attempts}</td>
+        </tr>`;
+    });
+
+    historyList.innerHTML = html;
+}
+
+// Start bomber
+async function startBomber() {
+    const number = document.getElementById('number').value;
+    const time = document.getElementById('time').value;
+    const password = document.getElementById('password').value;
+
+    if (!number || !time || !password) {
+        showStatus('Please fill all fields', 'error');
+        return;
+    }
+
+    if (!number.startsWith('01') || number.length !== 11) {
+        showStatus('Invalid number. Must be 11 digits starting with 01', 'error');
+        return;
+    }
+
+    showStatus('Starting bomber...', 'info');
+
+    try {
+        const res = await fetch(`/start?number=${number}&time=${time}&password=${password}`);
+        const data = await res.json();
+        if (data.error) showStatus(data.error, 'error');
+        else showStatus(data.message, 'success');
+
+        // Refresh data
+        await fetchData();
+    } catch (err) {
+        showStatus('Error starting bomber', 'error');
+    }
+}
+
+// Stop bomber
+async function confirmStop() {
+    const password = document.getElementById('stop-password').value;
+    if (!password) {
+        document.getElementById('modal-msg').innerText = 'Please enter password';
+        document.getElementById('modal-msg').style.color = '#ef4444';
+        return;
+    }
+
+    try {
+        const res = await fetch(`/stop?number=${currentModalNumber}&password=${password}`);
+        const data = await res.json();
+        if (data.error) {
+            document.getElementById('modal-msg').innerText = data.error;
+            document.getElementById('modal-msg').style.color = '#ef4444';
+        } else {
+            closeModal();
+            showStatus(data.message, 'success');
+            await fetchData();
+        }
+    } catch (err) {
+        document.getElementById('modal-msg').innerText = 'Error stopping bomber';
+        document.getElementById('modal-msg').style.color = '#ef4444';
+    }
+}
+
+// Status message
+function showStatus(message, type) {
+    const statusEl = document.getElementById('status-msg');
+    statusEl.innerText = message;
+    statusEl.style.color = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#6366f1';
+}
+
+// Modal controls
+function openModal(number) {
+    currentModalNumber = number;
+    document.getElementById('modal-number').innerText = number;
+    document.getElementById('stop-modal').classList.add('active');
+    document.getElementById('stop-password').value = '';
+    document.getElementById('modal-msg').innerText = '';
+}
+
+function closeModal() {
+    document.getElementById('stop-modal').classList.remove('active');
+}
+
+// Initialize
+function init() {
+    document.getElementById('start-btn').addEventListener('click', startBomber);
+    document.getElementById('stop-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    fetchData(); // Load real data
+    setInterval(fetchData, 5000); // Refresh every 5s
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('current-time').innerText = now.toLocaleTimeString();
+    }, 1000);
+}
+
+let currentDetailsNumber = null;
+
+function openDetails(number) {
+    // If modal is already open for this number, do nothing
+    if (currentDetailsNumber === number && 
+        document.getElementById('details-modal').classList.contains('active')) {
+        return;
+    }
+
+    const data = activeBombers[number];
+    if (!data) return;
+
+    currentDetailsNumber = number; // Track current number
+
+    document.getElementById('details-number').innerText = number;
+    document.getElementById('details-total').innerText = data.totalSent;
+    document.getElementById('details-attempts').innerText = data.attempts;
+
+    const tbody = document.getElementById('details-body');
+    tbody.innerHTML = '';
+
+    // Loop through all targets
+    for (const target in data.successesPerTarget) {
+        const success = data.successesPerTarget[target] || 0;
+        const fail = data.failuresPerTarget[target] || 0;
+        const lastPing = data.lastPing || 0;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${target}</td>
+            <td>${success}</td>
+            <td>${fail}</td>
+            <td>${lastPing}ms</td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    document.getElementById('details-modal').classList.add('active');
+}
+
+function closeDetails() {
+    currentDetailsNumber = null;
+    document.getElementById('details-modal').classList.remove('active');
+}
+
+
+
+
+let expandedNumber = null; // Track currently expanded number
+
+function toggleDetails(number) {
+    // Collapse previous expanded row if different
+    if (expandedNumber && expandedNumber !== number) {
+        document.getElementById(`details-${expandedNumber}`).style.display = 'none';
+    }
+
+    const detailsRow = document.getElementById(`details-${number}`);
+    if (!detailsRow) return;
+
+    if (detailsRow.style.display === 'none' || !detailsRow.style.display) {
+        detailsRow.style.display = 'table-row';
+        expandedNumber = number;
+        fillDetails(number); // Fill the data
+    } else {
+        detailsRow.style.display = 'none';
+        expandedNumber = null;
+    }
+}
+
+// Function to fill or update details dynamically
+// Function to fill or update details dynamically
+function fillDetails(number) {
+    const data = activeBombers[number];
+    if (!data) return;
+
+    const tbody = document.getElementById(`details-body-${number}`);
+    tbody.innerHTML = '';
+
+    // Union of success and failure targets
+    const allTargets = new Set([
+        ...Object.keys(data.successesPerTarget || {}),
+        ...Object.keys(data.failuresPerTarget || {})
+    ]);
+
+    let totalSuccess = 0;
+    let totalFail = 0;
+
+    allTargets.forEach(target => {
+        const success = data.successesPerTarget[target] || 0;
+        const fail = data.failuresPerTarget[target] || 0;
+        const lastPing = data.lastPing || 0;
+
+        totalSuccess += success;
+        totalFail += fail;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="color:#ffffff;">${target}</td>
+            <td style="color:#22c55e; font-weight:bold;">${success}</td>
+            <td style="color:#ef4444; font-weight:bold;">${fail}</td>
+            <td>${lastPing}ms</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // --- Add summary row at the bottom ---
+    const summary = document.createElement('tr');
+    summary.innerHTML = `
+        <td style="color:#ffffff; font-weight:bold;">Total</td>
+        <td style="color:#22c55e; font-weight:bold;">${totalSuccess}</td>
+        <td style="color:#ef4444; font-weight:bold;">${totalFail}</td>
+        <td></td>
+    `;
+    tbody.appendChild(summary);
+
+    // Update totals outside table
+    document.getElementById(`details-total-${number}`).innerText = data.totalSent;
+    document.getElementById(`details-attempts-${number}`).innerText = data.attempts;
+}
+
+// Update UI function
+// Update UI function
+function updateUI() {
+    updateStats();
+    updateBombersList();
+    updateHistoryList();
+
+    // Keep expanded panel updated (re-open if needed)
+    if (expandedNumber) {
+        const detailsRow = document.getElementById(`details-${expandedNumber}`);
+        if (detailsRow) {
+            detailsRow.style.display = "table-row"; // keep open
+            fillDetails(expandedNumber); // refresh data
+        }
+    }
+}
+
+
+
+window.addEventListener('load', init);
+</script>
+
+</body>
+</html>
