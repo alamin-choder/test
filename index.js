@@ -14,17 +14,33 @@ const linkRoutes = require("./routes/link");
 const FILE_FOLDER = path.join(__dirname, "file");
 const bomber = require('./web/boomber'); // Path to bomber.js
 // Your existing routes...
+// ---------------- SOCKET.IO SETUP ----------------
 const http = require('http');
 const { Server } = require('socket.io');
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // চাইলে তোমার নির্দিষ্ট ডোমেইন দিতে পারো
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
+
+// Bomber ফাইল socket.io পাবে
+const bomber = require('./web/boomber');
 bomber.attachIO(io);
+
+// Socket.io কানেকশন মনিটরিং (ঐচ্ছিক)
+io.on('connection', (socket) => {
+  console.log('🟢 New client connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('🔴 Client disconnected:', socket.id);
+  });
+});
+
+// এখন app.listen এর পরিবর্তে server.listen ব্যবহার করো
+
 app.get('/start', bomber.onStart);
 app.get('/status', bomber.onStatus);
 app.get('/stop', bomber.onStop);
