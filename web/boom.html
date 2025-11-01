@@ -1652,7 +1652,7 @@
         let currentModalNumber = '';
         let refreshInterval = 5000;
         let soundEnabled = true;
-        let chartsInitialized = false;
+        let chartsInitialized = true;
         let activityChart, successChart;
 
         // Initialize Particles
@@ -1752,7 +1752,7 @@
         // Fetch Data
         async function fetchData() {
             try {
-                showLoading();
+               
                 const statusRes = await fetch('/status');
                 const historyRes = await fetch('/history');
                 
@@ -1761,11 +1761,11 @@
                 
                 updateUI();
                 updateCharts();
-                hideLoading();
+                
             } catch (err) {
                 console.error('Error fetching data:', err);
                 showToast('error', 'Connection Error', 'Failed to fetch data from server');
-                hideLoading();
+                
             }
         }
 
@@ -2214,7 +2214,7 @@
             
             // Start data fetching
             fetchData();
-            setInterval(fetchData);
+            setInterval(fetchData,refreshInterval);
             setInterval(updateDateTime, 1000);
             
             // Welcome message
@@ -2226,26 +2226,20 @@
         // Start application
         window.addEventListener('load', init);
     </script>
-    <script src="/socket.io/socket.io.js"></script>
+   <script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
 
-  // ✅ bomber update আসলে UI আপডেট করো
   socket.on("bomber_update", (data) => {
-    console.log("Live update:", data);
-
-    // Example UI update
     const log = document.getElementById("liveLog");
     if (log) {
       const entry = document.createElement("div");
-      entry.textContent = `✔ ${data.target} → ${data.number} | Sent: ${data.totalSent} | Ping: ${data.lastPing}ms`;
+      entry.textContent = `✔ ${data.target} → ${data.number} | Sent: ${data.totalSent}`;
       log.prepend(entry);
     }
   });
 
-  // ❌ stop event হলে UI থেকে remove করো
   socket.on("bomber_stop", (data) => {
-    console.log("Bomber stopped:", data);
     const log = document.getElementById("liveLog");
     if (log) {
       const entry = document.createElement("div");
@@ -2254,7 +2248,13 @@
       log.prepend(entry);
     }
   });
+
+  socket.on("bomber_status", (data) => {
+    const status = document.getElementById("status");
+    status.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  });
 </script>
+
 
 </body>
 </html>
