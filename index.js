@@ -27,7 +27,7 @@ const io = new Server(server, {
 });
 
 // Bomber ফাইল socket.io পাবে
-const bomber = require('./web/boomber');
+
 bomber.attachIO(io);
 
 // Socket.io কানেকশন মনিটরিং (ঐচ্ছিক)
