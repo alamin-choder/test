@@ -14,6 +14,16 @@ const linkRoutes = require("./routes/link");
 const FILE_FOLDER = path.join(__dirname, "file");
 const bomber = require('./web/boomber'); // Path to bomber.js
 // Your existing routes...
+const http = require('http');
+const { Server } = require('socket.io');
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*", // চাইলে তোমার নির্দিষ্ট ডোমেইন দিতে পারো
+    methods: ["GET", "POST"]
+  }
+});
 app.get('/start', bomber.onStart);
 app.get('/status', bomber.onStatus);
 app.get('/stop', bomber.onStop);
