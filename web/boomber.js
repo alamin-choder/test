@@ -231,7 +231,7 @@ async function sendRequest(target, number, bomberData) {
       status: "success"
     });
   }
-      }
+      
 }
 
 // Bomber main function
@@ -368,6 +368,7 @@ function onDashboard(req, res) {
 
 
 module.exports = { meta, onStart, onStatus, onStop, onHistory, onDashboard, attachIO };
+
 
 
 
