@@ -367,7 +367,7 @@ function onDashboard(req, res) {
 
 
 
-module.exports = { meta, onStart, onStatus, onStop, onHistory, onDashboard };
+module.exports = { meta, onStart, onStatus, onStop, onHistory, onDashboard, attachIO };
 
 
 
