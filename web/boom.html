@@ -2226,5 +2226,23 @@
         // Start application
         window.addEventListener('load', init);
     </script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script>
+  const socket = io();
+
+  socket.on('bomber_update', data => {
+    console.log('Update:', data);
+    document.getElementById('status').innerText =
+      `📞 ${data.number} | 🎯 ${data.target} | ✅ Sent: ${data.totalSent}`;
+  });
+
+  socket.on('bomber_start', data => {
+    console.log('Started:', data);
+  });
+
+  socket.on('bomber_stop', data => {
+    console.log('Stopped:', data);
+  });
+</script>
 </body>
 </html>
