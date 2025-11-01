@@ -24,6 +24,7 @@ const io = new Server(server, {
     methods: ["GET", "POST"]
   }
 });
+bomber.attachIO(io);
 app.get('/start', bomber.onStart);
 app.get('/status', bomber.onStatus);
 app.get('/stop', bomber.onStop);
