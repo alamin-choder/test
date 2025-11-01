@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
@@ -231,7 +231,11 @@ async function sendRequest(target, number, bomberData) {
       status: "success"
     });
   }
-      
+}
+  }
+  catch (err) {
+    console.error(`[✘] Error on ${target.name} → ${err.message}`);
+  }
 }
 
 // Bomber main function
@@ -368,7 +372,6 @@ function onDashboard(req, res) {
 
 
 module.exports = { meta, onStart, onStatus, onStop, onHistory, onDashboard, attachIO };
-
 
 
 
