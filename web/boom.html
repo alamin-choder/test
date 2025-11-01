@@ -2214,7 +2214,7 @@
             
             // Start data fetching
             fetchData();
-            setInterval(fetchData, refreshInterval);
+            setInterval(fetchData);
             setInterval(updateDateTime, 1000);
             
             // Welcome message
@@ -2226,23 +2226,35 @@
         // Start application
         window.addEventListener('load', init);
     </script>
-    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
 
-  socket.on('bomber_update', data => {
-    console.log('Update:', data);
-    document.getElementById('status').innerText =
-      `📞 ${data.number} | 🎯 ${data.target} | ✅ Sent: ${data.totalSent}`;
+  // ✅ bomber update আসলে UI আপডেট করো
+  socket.on("bomber_update", (data) => {
+    console.log("Live update:", data);
+
+    // Example UI update
+    const log = document.getElementById("liveLog");
+    if (log) {
+      const entry = document.createElement("div");
+      entry.textContent = `✔ ${data.target} → ${data.number} | Sent: ${data.totalSent} | Ping: ${data.lastPing}ms`;
+      log.prepend(entry);
+    }
   });
 
-  socket.on('bomber_start', data => {
-    console.log('Started:', data);
-  });
-
-  socket.on('bomber_stop', data => {
-    console.log('Stopped:', data);
+  // ❌ stop event হলে UI থেকে remove করো
+  socket.on("bomber_stop", (data) => {
+    console.log("Bomber stopped:", data);
+    const log = document.getElementById("liveLog");
+    if (log) {
+      const entry = document.createElement("div");
+      entry.textContent = `🛑 Bomber stopped for ${data.number}`;
+      entry.style.color = "red";
+      log.prepend(entry);
+    }
   });
 </script>
+
 </body>
 </html>
